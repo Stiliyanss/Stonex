@@ -4,6 +4,7 @@ import Services from './components/Services'
 import Process from './components/Process'
 import About from './components/About'
 import Contact from './components/Contact'
+import FAQ from './components/FAQ'
 import Footer from './components/Footer'
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
         <Process />
         <About />
         <Contact />
+        <FAQ />
       </main>
       <Footer />
     </div>
