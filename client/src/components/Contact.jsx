@@ -10,18 +10,56 @@ const reveal = {
 }
 
 const fieldClass =
-  'w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-ink placeholder:text-slate-400 outline-none transition-colors focus:border-teal focus:ring-2 focus:ring-teal/20'
+  'w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-ink placeholder:text-slate-400 outline-none transition-colors focus:border-teal focus:ring-2 focus:ring-teal/20 disabled:opacity-60 disabled:cursor-not-allowed'
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', subject: 'Website', message: '' })
+  const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState(null)
 
-  const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
+  const update = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value }))
+    setError(null)
+  }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // No backend wired up — show a confirmation state.
-    setSent(true)
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('http://localhost:3002/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          subject: form.subject,
+          message: form.message,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send message')
+      }
+
+      // Success!
+      setSent(true)
+      setForm({ name: '', email: '', subject: 'Website', message: '' })
+
+      // Reset after 5 seconds
+      setTimeout(() => setSent(false), 5000)
+    } catch (err) {
+      console.error('Contact form error:', err)
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -36,11 +74,11 @@ export default function Contact() {
           >
             <span className="text-sm font-semibold uppercase tracking-wide text-teal">Contact</span>
             <h2 className="mt-3 text-3xl font-extrabold tracking-tightish text-ink sm:text-4xl">
-              Let’s build something together.
+              Let's build something together.
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-ink-soft">
-              Tell us about your project and we’ll get back to you shortly. No obligation — just a
-              conversation about what’s possible.
+              Tell us about your project and we'll get back to you shortly. No obligation — just a
+              conversation about what's possible.
             </p>
           </motion.div>
 
@@ -58,11 +96,18 @@ export default function Contact() {
                 </div>
                 <h3 className="mt-5 text-xl font-bold text-ink">Message sent!</h3>
                 <p className="mt-2 max-w-sm text-sm text-ink-soft">
-                  Thanks for reaching out, {form.name || 'there'}. We’ll be in touch soon.
+                  Thanks for reaching out, {form.name || 'there'}. We'll be in touch soon.
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Error message */}
+                {error && (
+                  <div className="rounded-lg border border-red-300 bg-red-50 p-4">
+                    <p className="text-sm font-medium text-red-800">{error}</p>
+                  </div>
+                )}
+
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div>
                     <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-ink">
@@ -72,6 +117,7 @@ export default function Contact() {
                       id="name"
                       type="text"
                       required
+                      disabled={loading}
                       value={form.name}
                       onChange={update('name')}
                       placeholder="Jane Doe"
@@ -86,6 +132,7 @@ export default function Contact() {
                       id="email"
                       type="email"
                       required
+                      disabled={loading}
                       value={form.email}
                       onChange={update('email')}
                       placeholder="jane@company.com"
@@ -101,6 +148,7 @@ export default function Contact() {
                   <div className="relative">
                     <select
                       id="subject"
+                      disabled={loading}
                       value={form.subject}
                       onChange={update('subject')}
                       className={`${fieldClass} appearance-none pr-10`}
@@ -122,6 +170,7 @@ export default function Contact() {
                   <textarea
                     id="message"
                     required
+                    disabled={loading}
                     rows={5}
                     value={form.message}
                     onChange={update('message')}
@@ -132,10 +181,13 @@ export default function Contact() {
 
                 <button
                   type="submit"
-                  className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-dark sm:w-auto"
+                  disabled={loading}
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-dark disabled:opacity-60 disabled:cursor-not-allowed sm:w-auto"
                 >
-                  Send message
-                  <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  {loading ? 'Sending...' : 'Send message'}
+                  {!loading && (
+                    <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  )}
                 </button>
               </form>
             )}
